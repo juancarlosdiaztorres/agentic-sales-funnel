@@ -8,6 +8,9 @@ CLAUDE.md
 # Local Claude Code permissions (contains allowed domains)
 .claude/settings.local.json
 
+# Real agents (business-specific) — templates/agents/ has the sanitized versions
+.claude/agents/
+
 # Environment
 .env
 .env.*
