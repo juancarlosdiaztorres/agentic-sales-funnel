@@ -1,0 +1,20 @@
+# Business outputs — never commit
+outputs/
+*.json
+
+# Project-specific config with business context
+CLAUDE.md
+
+# Local Claude Code permissions (contains allowed domains)
+.claude/settings.local.json
+
+# Environment
+.env
+.env.*
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+*.swp
