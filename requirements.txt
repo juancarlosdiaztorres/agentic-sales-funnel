@@ -1,0 +1,6 @@
+# scripts/scout_research.py — no Anthropic key needed
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# scripts/scout.py — requires ANTHROPIC_API_KEY in .env
+# anthropic>=0.40.0
