@@ -2,79 +2,131 @@
 
 ## The Problem
 
-Running Scout for 10 leads in a single Claude Code session accumulates context across all searches: every search result, every page fetch, every intermediate step consumes tokens. For 10 leads × 7 signal queries × 4 results each = 280 search results in context before scoring even begins.
+Running Scout for 10 leads in a single Claude Code session accumulates context: every search result, every page fetch, every intermediate step consumes tokens. For 10 leads × 4 signal queries × 4 results each = 160 search results in context before scoring begins.
 
-## Two Paths
+The new pipeline introduces two upstream stages (Market Mapper + discovery.py) that reduce what Scout needs to do — or skip it entirely for well-known companies.
 
-### Path A — Full Scout (high quality, higher cost)
+---
+
+## Three Paths
+
+### Path 1 — Market Mapper (cheapest Claude path)
+
+Market Mapper uses aggregated queries — 15 WebSearch calls total across all companies in a vertical, not per-company. It uses model knowledge for well-known companies and skips WebFetch entirely.
+
 ```
-Claude Code session
-  └── Scout agent
-        ├── WebSearch × N (discovery)
-        ├── WebSearch × 7 per company (signals)
-        ├── WebFetch × 2 per company (page content)
-        └── Score + structure
+Market Mapper (15 WebSearch total)
+  ├── "top neobanks Spain users 2024 2025"  → 5 companies at once
+  ├── "gambling apps Spain MAU 2024"        → 5 more companies
+  └── "marketplace apps Spain funding"      → 5 more
+          ↓
+  Account records with volume.* filled (icp.* null)
+          ↓
+Scout batch (4 queries × N companies)
+  └── Enriches icp.* only — no volume re-research
 ```
-All inside Claude. Context grows with every company. Best for: initial runs, unknown markets, when you need Scout's judgment on discovery.
 
-### Path B — Python pre-fetch + Scout scoring (lower cost)
+Best for: quarterly market scans, entering a new market, building the initial lead list.
+
+### Path 2 — discovery.py + Scout (zero-token discovery)
+
+`scripts/discovery.py` extracts company names from Crunchbase URL slugs via Serper — 0 Claude tokens for discovery. You then pass the company list to Scout for ICP scoring.
+
+```
+scripts/discovery.py               # 0 Claude tokens
+  ├── Serper queries by vertical
+  └── Slug extraction (Crunchbase, Dealroom, etc.)
+          ↓
+  Company name list (JSON)
+          ↓
+Scout (4 queries × N companies)
+  └── Full ICP research + scoring per company
+```
+
+Best for: when you want zero-cost discovery but full Scout depth on each company.
+
+### Path 3 — scout_research.py + Scout scoring (Serper pre-fetch)
+
+`scripts/scout_research.py` runs all signal queries via Serper and saves compact JSON. Scout then scores only — no signal searches needed.
+
 ```
 scripts/scout_research.py          # 0 Claude tokens
-  ├── Serper searches × 7 per company
+  ├── Serper searches × 4–7 per company
   ├── Page fetches × 2 per company
   └── Saves compact JSON
-
+          ↓
 Claude Code session
-  └── Scout agent (receives pre-fetched JSON)
+  └── Scout (receives pre-fetched JSON)
         └── Score + structure only  # ~50% fewer tokens
 ```
 
-Best for: known company lists, repeat runs on same market, when you want to control which companies get scored.
+Best for: known company lists, repeat runs on same market.
 
-## scout_research.py Modes
+---
 
-### Mode A — Discovery (finds company names automatically)
+## Comparison
+
+| | Market Mapper | discovery.py + Scout | scout_research.py + Scout |
+|---|---|---|---|
+| Discovery method | Aggregated WebSearch | Crunchbase slug extraction | Serper queries |
+| Claude tokens (discovery) | Low (aggregated) | **Zero** | **Zero** |
+| Claude tokens (scoring) | None (Market Mapper only) | Normal Scout | Reduced (~50%) |
+| Volume estimates | Yes (API-specific) | No | No |
+| ICP signals | First-pass only | Full Scout depth | Full Scout depth |
+| Best for | New market scans | Targeted lists | Repeat runs |
+
+---
+
+## Recommended Workflows
+
+### New market entry
+```
+Run Market Mapper for [market], verticals: [list], api_focus: [list]
+```
+Then:
+```
+Run Scout batch on these accounts: [paste market-map JSON]
+```
+
+### One-off meeting prep
+```
+Use the Analyst agent for company: [name], [market]
+```
+Analyst runs its own research in standalone mode — no Market Mapper or Scout needed.
+
+### Token-efficient batch (known companies)
 ```bash
 python3 scripts/scout_research.py \
+  --companies "Wallapop" "Bnext" "SeQura" \
   --markets Spain \
-  --industries fintech neobanks gaming \
-  --candidates 15
+  --api-focus number_verification sim_swap
 ```
-Note: discovery without a language model is noisy. Use Mode B when possible.
+Then in Claude Code:
+```
+Score and structure these pre-researched companies: [paste JSON from outputs/leads/research_*.json]
+```
 
-### Mode B — Specific companies (skip discovery)
+### Zero-token company name discovery
 ```bash
-python3 scripts/scout_research.py \
-  --companies Wallapop Bit2Me SeQura "Job and Talent" \
-  --markets Spain
+python3 scripts/discovery.py \
+  --markets Spain \
+  --industries fintech neobanks gambling marketplace gig \
+  --count 30
 ```
-This is the reliable path. Use Scout for discovery first, then use `--companies` for targeted signal research.
+Then in Claude Code:
+```
+Run Scout with these companies: [paste discovery JSON]
+```
 
-## Recommended Workflow
+---
 
-1. **Run Scout once per market** to discover and score leads:
-   ```
-   Run Scout with: target_markets: ["Spain"], industries: [...], lead_count: 10
-   ```
+## Token Efficiency Rules Built Into Scout
 
-2. **Save the lead JSON** — it's your asset. Stored in `outputs/leads/`.
-
-3. **For follow-up companies** (e.g., a prospect mentioned in a meeting), use Mode B:
-   ```bash
-   python3 scripts/scout_research.py --companies "Acme Corp" --markets Spain
-   ```
-   Then paste the output JSON into Scout for scoring.
-
-4. **For one-pagers on known companies** (no Scout needed), use Analyst in standalone mode:
-   ```
-   Use the Analyst agent with: company name "Acme Corp", Spain, fintech
-   ```
-
-## Token Efficiency Rules in Scout
-
-Scout's system prompt enforces these rules to limit token usage during its own research:
-- Max 4 WebSearch queries per lead (priority order: fraud_or_ato → sms_otp_dependency → auth_stack → hiring)
+Scout's system prompt enforces these rules automatically:
+- Max 4 WebSearch queries per lead (priority: fraud_or_ato → sms_otp_dependency → auth_stack → hiring)
 - Prefer search snippets over WebFetch when snippet supports the claim
 - Max 2 WebFetch calls per lead
 - Never WebFetch a homepage
 - Only WebFetch allowed paths: `/security`, `/developers`, `/docs`, `/blog`, `/careers`, `/press`
+
+In batch mode, Scout skips volume research entirely (already filled by Market Mapper) — only runs ICP signal queries.
