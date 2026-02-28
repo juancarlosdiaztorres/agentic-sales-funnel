@@ -2,6 +2,9 @@
 outputs/
 *.json
 
+# Schema definitions are source code — explicitly unignore
+!schemas/**/*.json
+
 # Project-specific config with business context
 CLAUDE.md
 
