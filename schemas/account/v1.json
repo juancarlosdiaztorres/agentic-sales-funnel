@@ -62,15 +62,42 @@
 
     "volume": {
       "type": "object",
-      "description": "User/customer scale. Filled by Market Mapper or on-demand research. Key signal for pipeline prioritization.",
+      "description": "User scale + API call volume estimates. Filled by Market Mapper. Different APIs have different trigger events — estimates are calculated accordingly.",
       "properties": {
-        "users_label":  { "type": ["string", "null"], "description": "Human-readable: '19M MAU', '~3M est.', '6M clientes'" },
-        "users_raw":    { "type": ["integer", "null"], "description": "Best numeric estimate (users/MAU)" },
-        "metric_type":  { "type": ["string", "null"], "enum": ["MAU", "customers", "registered", "monthly_visits", "subscribers", null] },
-        "confidence":   { "type": ["string", "null"], "enum": ["high", "medium", "low", null] },
-        "source":       { "type": ["string", "null"], "description": "Source description, e.g. 'Company press release Sep 2025'" },
-        "source_url":   { "type": ["string", "null"] },
-        "as_of":        { "type": ["string", "null"], "description": "Date of the figure (YYYY-MM or YYYY)" }
+
+        "users_total":          { "type": ["string", "null"], "description": "Total registered/contracted users or policyholders. e.g. '20M registrados'" },
+        "users_mau":            { "type": ["string", "null"], "description": "Monthly active users. e.g. '19M MAU'" },
+        "users_mau_raw":        { "type": ["integer", "null"], "description": "Numeric MAU for calculations" },
+        "users_dau_est":        { "type": ["string", "null"], "description": "Estimated DAU (typically MAU × 0.30 for consumer apps). e.g. '~5.7M DAU (est.)'" },
+
+        "triggers": {
+          "type": "object",
+          "description": "Estimated trigger events per API type. These are the denominator for API call volume.",
+          "properties": {
+            "logins_per_day":         { "type": ["string", "null"], "description": "For Number Verification + SIM Swap. Est: DAU × avg_sessions. e.g. '~6.8M/día'" },
+            "sms_otp_per_day":        { "type": ["string", "null"], "description": "Current estimated SMS OTPs fired per day (what we replace). e.g. '~2M/día'" },
+            "onboardings_per_month":  { "type": ["string", "null"], "description": "For KYC Match + Age Verification. New user registrations. e.g. '~950K/mes'" },
+            "risky_txns_per_day":     { "type": ["string", "null"], "description": "For SIM Swap. High-value or sensitive transactions. e.g. '~500K/día'" },
+            "notes":                  { "type": ["string", "null"], "description": "Anything that affects volume estimates: seasonality, wallet launch, regulatory events" }
+          }
+        },
+
+        "api_call_estimates": {
+          "type": "object",
+          "description": "Estimated annual API calls per product. Label includes basis. e.g. '~730M calls/año (logins × 30% OTP rate × 365)'",
+          "properties": {
+            "number_verification": { "type": ["string", "null"] },
+            "sim_swap":            { "type": ["string", "null"] },
+            "kyc_match":           { "type": ["string", "null"] },
+            "age_verification":    { "type": ["string", "null"] },
+            "device_status":       { "type": ["string", "null"] }
+          }
+        },
+
+        "confidence":  { "type": ["string", "null"], "enum": ["high", "medium", "low", null] },
+        "source":      { "type": ["string", "null"], "description": "Source description" },
+        "source_url":  { "type": ["string", "null"] },
+        "as_of":       { "type": ["string", "null"], "description": "Date of the base figure (YYYY-MM or YYYY)" }
       }
     },
 
