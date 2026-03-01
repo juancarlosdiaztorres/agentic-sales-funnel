@@ -52,26 +52,49 @@ For each item in `fit.recommended_api_bundle`:
 Map `commercial_motion`: direct integration / via partner / via existing vendor
 
 ### 4. Why Now
-3 bullets max, each specific and time-bound:
-- Recent incident or failure
-- Regulatory deadline or action
+3 bullets max, each specific and time-bound. **Always include at least one regulatory/threat angle**:
+- Recent incident or failure (time-bound: month/year)
+- Regulatory deadline or recent ruling — use market-relevant angle:
+  - SMS-OTP: NIST 800-63B (2024) removed SMS OTP from approved authenticators; UK NCSC / ENISA advisories against SMS OTP as sole MFA
+  - SIM swap stats: cite country-specific surge data (search if not in Scout signals)
+  - Vertical regulations: PSD2 SCA, DORA (Jan 2025), MiCA (Jun 2024), CCD2 (Nov 2026), gaming license KYC requirements
 - Competitor move or hiring surge
 
-### 5. What They Gain
-3 concrete benefit statements, quantified where possible:
-- Risk/incident reduction
-- Conversion or efficiency uplift (use industry benchmark if no specific data)
-- Cost reduction
+### 5. Business Case / Volumetrics
+Show the API call math per product in scope. Derive from Scout estimates or heuristics; label all derived numbers "(estimated)".
 
-### 6. Fit for Their Team
+**Formula per product type:**
+- Silent auth / Number Verification: `logins/day × OTP_rate × 365`
+- SIM Swap: `high_risk_txns/day × 365`
+- KYC / Age Verification: `onboardings/month × 12`
+
+Format as a table:
+
+| Product | Trigger | Basis | Annual calls (estimated) |
+|---------|---------|-------|--------------------------|
+| [Product 1] | [Login / onboarding / transaction] | [X events/day × rate × 365] | ~[X]M/year |
+
+**Also include:**
+- SMS cost exposure: `OTP_calls/year × real_cost/SMS = €X/year` — note SMS is **not 1:1**: A2P markup (2–3×), retry storms (8–15% non-delivery), throttling inflate real per-auth cost to €0.05–0.12 vs nominal €0.01–0.03
+- PoC scope: realistic call volume over 30 days at [X]% of production traffic
+
+### 6. Customer Benefits
+Cover the structural advantages, not generic claims:
+- **UX — zero friction**: silent authentication (no code, no wait). Benchmark: 15–30% conversion improvement vs SMS OTP
+- **Security — carrier-layer, not behavioral**: SIM Swap works at the network level, unbypassable by device spoofing, emulators, or credential stuffing that defeat behavioral signals
+- **Transparency**: deterministic Boolean result — auditable and explainable to regulators vs ML-based fraud scores (black box)
+- **Latency**: < 100ms API response vs 3–8s average SMS delivery (up to 60s+ under congestion)
+- **Operational cost — SMS is not 1:1**: 8–15% of OTPs never delivered; retries add volume; A2P markup adds 2–3× over base rate. Real cost per authentication: €0.05–0.12, not the €0.01 nominal rate
+
+### 7. Fit for Their Team
 Use `buyers_and_personas` (max 3):
 - Title + why they care (1 line each)
 
-### 7. Risks & How We Handle Them
+### 8. Risks & How We Handle Them
 Use `risks_and_objections` (max 3):
 `[Risk] → [Mitigation]`
 
-### 8. Next Step
+### 9. Next Step
 One specific CTA — not "let's talk":
 - A scoped PoC with a timeline
 - A technical discovery session with a clear agenda
@@ -99,14 +122,25 @@ Return a single clean markdown document:
 *[Commercial motion framing]*
 
 ## [Why Now heading]
-- [Signal 1]
-- [Signal 2]
-- [Signal 3]
+- [Regulatory signal with deadline or recent ruling]
+- [Incident or threat stat, time-bound]
+- [Competitor move or hiring signal]
 
-## [What They Gain heading]
-- **[Benefit 1]**: [specific]
-- **[Benefit 2]**: [specific or benchmark]
-- **[Benefit 3]**: [specific or estimate]
+## [Business Case / Volumetrics heading]
+
+| Product | Trigger | Basis | Annual calls (estimated) |
+|---------|---------|-------|--------------------------|
+| [Product 1] | [trigger] | [X events × rate × 365] | ~[X]M/year |
+| [Product 2] | [trigger] | [X events × rate × 365] | ~[X]M/year |
+
+**[Current cost exposure]**: ~[X]M OTPs/year × €[real cost]/SMS (incl. A2P markup + retries) = **€[X]/year (estimated)**
+
+## [Customer Benefits heading]
+- **UX**: [silent auth vs OTP — conversion benchmark]
+- **Security**: [carrier-layer signal — what it beats that behavioral cannot]
+- **Transparency**: [deterministic Boolean, auditable]
+- **Latency**: [< 100ms vs X seconds SMS]
+- **Operational cost**: [SMS not 1:1 — real cost per auth]
 
 ## [Personas heading]
 - **[Persona 1]**: [why they care]
