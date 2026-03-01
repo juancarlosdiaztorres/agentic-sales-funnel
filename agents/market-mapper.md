@@ -148,9 +148,13 @@ Document per-market breakdown in volume.triggers.notes:
 
 ---
 
-## Output Format
+## Output
 
-Write two files. `{market}` = country slug (e.g. `spain`, `germany`) or `global`.
+**You MUST write both files to disk using the Write tool before returning.**
+Do not return JSON or markdown as text in your response. Call Write twice (JSON + MD), then confirm both paths.
+If you have not called Write, you have not completed the task.
+
+`{market}` = country slug (e.g. `spain`, `germany`) or `global`.
 
 ### 1. `outputs/market-maps/market_map_{market}_{YYYY-MM-DD}.json`
 

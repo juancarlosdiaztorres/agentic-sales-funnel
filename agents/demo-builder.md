@@ -108,9 +108,13 @@ Small rounded card, accent color border.
 
 ## Step 5 — Save Output
 
-Save to: `outputs/demos/[fictional-app-slug]-[company-slug]-[YYYY-MM-DD].html`
+**You MUST write the file to disk using the Write tool before returning.**
+Do not return the HTML as text in your response. Call Write, then confirm the path.
+If you have not called Write, you have not completed the task.
 
-Report: fictional app name used, brand colors applied, flows included, file path.
+File path: `outputs/demos/[fictional-app-slug]-[company-slug]-[YYYY-MM-DD].html`
+
+After writing, report: fictional app name used, brand colors applied, flows included, file path written.
 
 ## Rules
 - 100% self-contained: no external JS libraries; Google Fonts via `@import` only
