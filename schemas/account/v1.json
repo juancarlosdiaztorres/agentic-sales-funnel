@@ -1,0 +1,182 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "account/v1",
+  "title": "Account Record v1",
+  "description": "Shared data model that flows through all agents. Fields are progressively enriched — null means 'not yet filled', not 'unknown'.",
+
+  "type": "object",
+  "required": ["id", "company", "meta"],
+
+  "$defs": {
+
+    "api_entry": {
+      "type": "object",
+      "description": "Whether a specific API is relevant for this account, and why.",
+      "required": ["relevant"],
+      "properties": {
+        "relevant":   { "type": ["boolean", "null"], "description": "null = not yet assessed" },
+        "confidence": { "type": ["string", "null"], "enum": ["high", "medium", "low", null] },
+        "reason":     { "type": ["string", "null"], "description": "One-line reason for relevance or exclusion" }
+      }
+    },
+
+    "enrichment_event": {
+      "type": "object",
+      "description": "Audit log entry — one per agent run on this record.",
+      "required": ["agent", "timestamp", "mode"],
+      "properties": {
+        "agent":        { "type": "string", "description": "e.g. 'market-mapper', 'scout', 'analyst'" },
+        "timestamp":    { "type": "string", "format": "date-time" },
+        "mode":         { "type": "string", "enum": ["bulk", "on_demand"] },
+        "fields_added": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+
+  },
+
+  "properties": {
+
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+-[a-z]{2}$",
+      "description": "Stable identifier: {company-slug}-{iso2-country}. e.g. 'wallapop-es', 'glovo-de'",
+      "examples": ["wallapop-es", "revolut-gb", "nubank-br"]
+    },
+
+    "company": {
+      "type": "object",
+      "required": ["name", "hq_country"],
+      "properties": {
+        "name":         { "type": "string" },
+        "website":      { "type": ["string", "null"] },
+        "hq_country":   { "type": "string", "description": "ISO 3166-1 alpha-2" },
+        "markets":      { "type": "array", "items": { "type": "string" }, "description": "All markets where the company operates (ISO2)" },
+        "industry":     { "type": ["string", "null"] },
+        "account_tier": {
+          "type": ["integer", "null"],
+          "enum": [1, 2, 3, null],
+          "description": "Company size tier. 1=large incumbent (exclude from pipeline), 2=mid-market (primary), 3=scale-up (secondary). Separate from icp.score_tier."
+        }
+      }
+    },
+
+    "volume": {
+      "type": "object",
+      "description": "User scale + API call volume estimates. Filled by Market Mapper. Different APIs have different trigger events — estimates are calculated accordingly.",
+      "properties": {
+
+        "users_total":          { "type": ["string", "null"], "description": "Total registered/contracted users or policyholders. e.g. '20M registrados'" },
+        "users_mau":            { "type": ["string", "null"], "description": "Monthly active users. e.g. '19M MAU'" },
+        "users_mau_raw":        { "type": ["integer", "null"], "description": "Numeric MAU for calculations" },
+        "users_dau_est":        { "type": ["string", "null"], "description": "Estimated DAU (typically MAU × 0.30 for consumer apps). e.g. '~5.7M DAU (est.)'" },
+
+        "triggers": {
+          "type": "object",
+          "description": "Estimated trigger events per API type. These are the denominator for API call volume.",
+          "properties": {
+            "logins_per_day":         { "type": ["string", "null"], "description": "For Number Verification + SIM Swap. Est: DAU × avg_sessions. e.g. '~6.8M/día'" },
+            "sms_otp_per_day":        { "type": ["string", "null"], "description": "Current estimated SMS OTPs fired per day (what we replace). e.g. '~2M/día'" },
+            "onboardings_per_month":  { "type": ["string", "null"], "description": "For KYC Match + Age Verification. New user registrations. e.g. '~950K/mes'" },
+            "risky_txns_per_day":     { "type": ["string", "null"], "description": "For SIM Swap. High-value or sensitive transactions. e.g. '~500K/día'" },
+            "notes":                  { "type": ["string", "null"], "description": "Anything that affects volume estimates: seasonality, wallet launch, regulatory events" }
+          }
+        },
+
+        "api_call_estimates": {
+          "type": "object",
+          "description": "Estimated annual API calls per product. Label includes basis. e.g. '~730M calls/año (logins × 30% OTP rate × 365)'",
+          "properties": {
+            "number_verification": { "type": ["string", "null"] },
+            "sim_swap":            { "type": ["string", "null"] },
+            "kyc_match":           { "type": ["string", "null"] },
+            "age_verification":    { "type": ["string", "null"] },
+            "device_status":       { "type": ["string", "null"] }
+          }
+        },
+
+        "confidence":  { "type": ["string", "null"], "enum": ["high", "medium", "low", null] },
+        "source":      { "type": ["string", "null"], "description": "Source description" },
+        "source_url":  { "type": ["string", "null"] },
+        "as_of":       { "type": ["string", "null"], "description": "Date of the base figure (YYYY-MM or YYYY)" }
+      }
+    },
+
+    "api_fit": {
+      "type": "object",
+      "description": "Per-API relevance assessment. Filled progressively — Market Mapper does a quick pass, Scout refines with signals.",
+      "properties": {
+        "number_verification": { "$ref": "#/$defs/api_entry" },
+        "sim_swap":            { "$ref": "#/$defs/api_entry" },
+        "kyc_match":           { "$ref": "#/$defs/api_entry" },
+        "age_verification":    { "$ref": "#/$defs/api_entry" },
+        "device_status":       { "$ref": "#/$defs/api_entry" }
+      }
+    },
+
+    "icp": {
+      "type": "object",
+      "description": "ICP scoring. Filled by Scout. Null until Scout has run on this record.",
+      "properties": {
+        "score":       { "type": ["number", "null"], "minimum": 0, "maximum": 10 },
+        "score_tier":  { "type": ["string", "null"], "enum": ["A", "B", "C", null], "description": "A≥8.0, B 6.0-7.9, C<6.0. Never confuse with account_tier." },
+        "use_cases":   { "type": ["array", "null"], "items": { "type": "string" } },
+        "why_now":     { "type": ["array", "null"], "items": { "type": "string" } },
+        "signals": {
+          "type": ["object", "null"],
+          "properties": {
+            "fraud_or_ato":       { "type": ["string", "null"] },
+            "sms_otp_dependency": { "type": ["string", "null"] },
+            "auth_stack":         { "type": ["string", "null"] },
+            "hiring":             { "type": ["string", "null"] },
+            "sim_swap":           { "type": ["string", "null"] },
+            "regulatory":         { "type": ["string", "null"] }
+          }
+        },
+        "first_outreach_angle": { "type": ["string", "null"] },
+        "sources": { "type": ["array", "null"], "items": { "type": "string" } }
+      }
+    },
+
+    "outreach": {
+      "type": "object",
+      "description": "Analyst output. Null until Analyst has run.",
+      "properties": {
+        "one_pager_path": { "type": ["string", "null"] },
+        "angle":          { "type": ["string", "null"], "description": "Primary outreach angle for this account" },
+        "cta":            { "type": ["string", "null"], "description": "Specific call-to-action from one-pager" },
+        "language":       { "type": ["string", "null"], "enum": ["es", "en", "de", "pt", null] }
+      }
+    },
+
+    "demo": {
+      "type": "object",
+      "description": "Demo Builder output. Null until Demo Builder has run.",
+      "properties": {
+        "demo_path": { "type": ["string", "null"] },
+        "app_name":  { "type": ["string", "null"] }
+      }
+    },
+
+    "meta": {
+      "type": "object",
+      "required": ["created_at", "created_by", "origin", "schema_version"],
+      "properties": {
+        "schema_version": { "type": "string", "const": "account/v1" },
+        "created_at":     { "type": "string", "format": "date-time" },
+        "updated_at":     { "type": ["string", "null"], "format": "date-time" },
+        "created_by":     { "type": "string", "description": "Agent or user that created the record. e.g. 'market-mapper', 'analyst', 'manual'" },
+        "origin": {
+          "type": "string",
+          "enum": ["bulk", "on_demand", "manual"],
+          "description": "bulk = created from a Market Mapper run. on_demand = triggered by a specific company input. manual = added by hand."
+        },
+        "enrichments": {
+          "type": "array",
+          "description": "Ordered audit log of all agent runs on this record.",
+          "items": { "$ref": "#/$defs/enrichment_event" }
+        }
+      }
+    }
+
+  }
+}

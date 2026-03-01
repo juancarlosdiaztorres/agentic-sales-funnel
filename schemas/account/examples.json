@@ -1,0 +1,131 @@
+{
+  "_comment": "Two example records showing the same schema in different enrichment states.",
+
+  "bulk_after_market_mapper": {
+    "_comment": "Created by Market Mapper. Volume filled, api_fit basic pass. ICP/outreach/demo all null — Scout hasn't run yet.",
+    "id": "wallapop-es",
+    "company": {
+      "name": "Wallapop",
+      "website": "wallapop.com",
+      "hq_country": "ES",
+      "markets": ["ES", "IT", "PT"],
+      "industry": "marketplace",
+      "account_tier": 2
+    },
+    "volume": {
+      "users_label": "19M MAU",
+      "users_raw": 19000000,
+      "metric_type": "MAU",
+      "confidence": "high",
+      "source": "Wallapop break-even press release",
+      "source_url": "https://www.pressdigital.es/articulo/economia/2025-09-10/5421931-wallapop-reduce-18-perdidas-globales-2024-logra-primera-vez-break-even-espana",
+      "as_of": "2024"
+    },
+    "api_fit": {
+      "number_verification": { "relevant": true,  "confidence": "high",   "reason": "SMS OTP confirmed for account registration and 2FA" },
+      "sim_swap":            { "relevant": true,  "confidence": "medium", "reason": "C2C fraud exposure in payment flows" },
+      "kyc_match":           { "relevant": false, "confidence": "low",    "reason": "No regulated financial onboarding required" },
+      "age_verification":    { "relevant": false, "confidence": "high",   "reason": "General marketplace, no age-restricted content" },
+      "device_status":       { "relevant": null,  "confidence": null,     "reason": null }
+    },
+    "icp":      { "score": null, "score_tier": null, "use_cases": null, "why_now": null, "signals": null, "first_outreach_angle": null, "sources": null },
+    "outreach": { "one_pager_path": null, "angle": null, "cta": null, "language": null },
+    "demo":     { "demo_path": null, "app_name": null },
+    "meta": {
+      "schema_version": "account/v1",
+      "created_at": "2026-02-28T10:00:00Z",
+      "updated_at": null,
+      "created_by": "market-mapper",
+      "origin": "bulk",
+      "enrichments": [
+        {
+          "agent": "market-mapper",
+          "timestamp": "2026-02-28T10:00:00Z",
+          "mode": "bulk",
+          "fields_added": ["company", "volume", "api_fit"]
+        }
+      ]
+    }
+  },
+
+  "on_demand_fully_enriched": {
+    "_comment": "Created on-demand ('tengo reunión con Glovo mañana'). Scout + Analyst ran immediately. Demo pending.",
+    "id": "glovo-es",
+    "company": {
+      "name": "Glovo",
+      "website": "glovoapp.com",
+      "hq_country": "ES",
+      "markets": ["ES", "IT", "PT", "PL", "UA", "KE", "NG"],
+      "industry": "food delivery",
+      "account_tier": 2
+    },
+    "volume": {
+      "users_label": "~5M MAU España (est.)",
+      "users_raw": 5000000,
+      "metric_type": "MAU",
+      "confidence": "medium",
+      "source": "Glovo most downloaded food delivery app Spain 2024 (Statista), global 100M+ orders/year",
+      "source_url": "https://www.statista.com/statistics/1298258/food-delivery-app-downloads-spain/",
+      "as_of": "2024"
+    },
+    "api_fit": {
+      "number_verification": { "relevant": true,  "confidence": "high",   "reason": "SMS OTP at registration and periodic re-auth; high fraud on new accounts" },
+      "sim_swap":            { "relevant": true,  "confidence": "medium", "reason": "Payment fraud risk in delivery transactions" },
+      "kyc_match":           { "relevant": false, "confidence": "high",   "reason": "Consumer app, no regulated identity requirement" },
+      "age_verification":    { "relevant": false, "confidence": "high",   "reason": "No age-restricted verticals" },
+      "device_status":       { "relevant": false, "confidence": "medium", "reason": "No explicit connectivity requirement in current flows" }
+    },
+    "icp": {
+      "score": 8.5,
+      "score_tier": "A",
+      "use_cases": [
+        "Silent Authentication replacing SMS OTP at app registration",
+        "Number Verification to block fake courier accounts",
+        "SIM Swap check before high-value order payment authorization"
+      ],
+      "why_now": [
+        "Glovo gig-worker court ruling in Spain (2021 onwards) increases identity verification pressure on courier onboarding",
+        "Active fraud on Glovo payment flows documented in Spanish consumer press (2024)",
+        "Delivery market consolidation — Glovo acquired Just Eat Spain operations creating larger combined user base"
+      ],
+      "signals": {
+        "fraud_or_ato":       "Consumer fraud reports and chargebacks documented in Spanish press 2024",
+        "sms_otp_dependency": "SMS OTP confirmed at app registration; 2FA on payment method changes",
+        "auth_stack":         "AWS Cognito inferred from job postings; mobile-first iOS + Android",
+        "hiring":             "Security Engineer - Identity & Access Management posted Madrid (LinkedIn, Jan 2026)",
+        "sim_swap":           "No direct incident, but payment tokenization stack exposure",
+        "regulatory":         "Riders' Law (Ley Rider) compliance and courier KYC obligations"
+      },
+      "first_outreach_angle": "Glovo's fraud exposure in courier onboarding + payment auth is the entry point; Number Verification eliminates virtual-number account farms at zero friction for real users",
+      "sources": [
+        "https://about.glovoapp.com/press/glovo-celebrates-10-years/",
+        "https://eu-startups.com/2025/05/ten-years-of-glovo-growth-gig-work-and-legal-challenges/"
+      ]
+    },
+    "outreach": {
+      "one_pager_path": "outputs/one-pagers/glovo-es-2026-02-28.md",
+      "angle": "Silent auth para eliminar fraude en onboarding de repartidores y cuentas de pago",
+      "cta": "Piloto de Number Verification en flujo de registro de repartidores — 30 días, sin cambio de UX",
+      "language": "es"
+    },
+    "demo": {
+      "demo_path": null,
+      "app_name": null
+    },
+    "meta": {
+      "schema_version": "account/v1",
+      "created_at": "2026-02-28T14:00:00Z",
+      "updated_at": "2026-02-28T14:45:00Z",
+      "created_by": "analyst",
+      "origin": "on_demand",
+      "enrichments": [
+        {
+          "agent": "analyst",
+          "timestamp": "2026-02-28T14:00:00Z",
+          "mode": "on_demand",
+          "fields_added": ["company", "volume", "api_fit", "icp", "outreach"]
+        }
+      ]
+    }
+  }
+}
