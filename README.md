@@ -24,6 +24,41 @@ Market Mapper ──► Scout (batch) ──► Analyst ──► Demo Builder
 
 All agents read and write `schemas/account/v1.json` — a shared record enriched progressively by each layer.
 
+## TL;DR — launch from zero
+
+**Requirements:** [Claude Code](https://claude.ai/code) (Pro or Team plan) + [Serper.dev](https://serper.dev) API key (free tier: 2,500 searches/month)
+
+```bash
+# 1. Clone and install
+git clone https://github.com/your-username/agentic-sales-funnel
+cd agentic-sales-funnel
+pip install -r requirements.txt
+
+# 2. Configure
+cp .env.example .env          # add SERPER_API_KEY (get one free at serper.dev)
+mkdir -p .claude/agents
+cp agents/*.md .claude/agents/
+# Edit each .claude/agents/*.md — replace [YOUR PRODUCT] with your product name and API descriptions
+```
+
+**3. Run in a Claude Code chat session:**
+
+```
+# Fastest path — one-pager for a specific company (no pre-built lead list needed):
+Use the Analyst agent for company: Revolut, UK, fintech
+
+# Full pipeline — market scan → ICP scoring → one-pager per qualifying lead:
+Run Orchestrator:
+- markets: ["Spain", "Germany"]
+- verticals: ["fintech", "neobanks", "gambling"]
+- api_focus: ["number_verification", "sim_swap"]
+- lead_count: 20
+```
+
+That's it. Outputs land in `outputs/` (gitignored). See [docs/token-efficiency.md](docs/token-efficiency.md) for the cheapest execution paths.
+
+---
+
 ## Quick Start
 
 ### Requirements
@@ -160,9 +195,10 @@ Core ICP criterion: the company must use SMS-OTP in their own authentication flo
 Analyst takes a single lead and produces a one-pager structured for a first meeting pre-read:
 - Company snapshot and problem statement
 - Specific API solution with integration hypothesis
-- Why now (regulatory, incident, hiring signals)
-- Quantified benefits with annual API call volume estimate
-- Objection handling
+- Why now — including regulatory context (SMS-OTP deprecation advisories, SIM swap surge stats, vertical-specific regulations: PSD2, DORA, MiCA, CCD2, gaming KYC)
+- Business case / volumetrics — per-API call forecast table with explicit math (`logins/day × OTP rate × 365`), real SMS cost exposure (including A2P markup and retry storms — SMS is not 1:1)
+- Customer benefits — UX (silent auth, no OTP friction), security (carrier-layer vs behavioral), transparency (deterministic Boolean, auditable), latency (<100ms vs 3-8s SMS), operational cost savings
+- Personas and objection handling
 
 Every data point cites its source inline: `([Publisher, Date](URL))`.
 

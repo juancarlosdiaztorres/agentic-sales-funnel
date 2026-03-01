@@ -62,6 +62,17 @@ When `market: "global"`, Market Mapper targets pan-regional companies operating 
 **Scout — ICP focus:**
 The ICP section is the most important part of Scout. Core criterion: *the company must use SMS-OTP in their own authentication flows*. Generic marketplaces or B2B-only companies without consumer auth are excluded.
 
+**Analyst — one-pager structure (9 sections):**
+1. Company snapshot (3 lines)
+2. The problem — signal-backed, every claim cited
+3. The solution — per API: what it does, where it fits, what changes
+4. Why now — mandatory regulatory angle: SMS-OTP deprecation (NIST 800-63B), country-specific SIM swap stats, vertical regulations (PSD2 SCA, DORA, MiCA, CCD2, gaming KYC)
+5. Business case / volumetrics — per-API call forecast table with explicit math; SMS cost exposure including A2P markup and retry rate (SMS is not 1:1: real cost €0.05–0.12 vs nominal €0.01–0.03)
+6. Customer benefits — UX (silent, no OTP), security (carrier-layer, not behavioral), transparency (deterministic Boolean, auditable), latency (<100ms vs 3–8s SMS), operational cost
+7. Fit for their team — personas and why each cares
+8. Risks and objections
+9. Next step — one specific CTA
+
 **Analyst — inline citations:**
 Every data point in the one-pager must cite its source inline: `([Publisher, Date](URL))`. This is enforced in the system prompt. The one-pager is a sales document — every claim must be defensible.
 
